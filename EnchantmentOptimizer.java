@@ -95,10 +95,7 @@ public class EnchantmentOptimizer {
 		if (useXp.isSelected()) {
 			TreeOrder o = getBestTree(trees, en);
 
-			System.out.println(findPermute(o.tree, en));
-
 			en = o.ench();
-			System.out.println(en);
 
 			trees.clear();
 			trees.add(o.tree());
