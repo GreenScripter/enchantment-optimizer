@@ -1,1 +1,94 @@
-Hello World
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+
+</style>
+<script>
+    let maxLevel =   [4, 4, 4, 4, 4, 3, 3, 3, 1, 5, 5, 5, 2, 2, 3, 5, 1, 3, 3, 5, 2, 1, 1, 3, 3, 2, 1, 1, 1, 5, 3, 3, 1, 1, 4, 3, 3, 3, 3];
+    let multiplier = [1, 1, 1, 2, 1, 4, 2, 2, 2, 1, 1, 1, 1, 2, 2, 1, 4, 1, 2, 1, 2, 2, 4, 2, 2, 2, 2, 4, 4, 2, 2, 1, 4, 2, 1, 1, 4, 4, 2];
+    let names = ["Protection", "Fire Protection", "Feather Falling", "Blast Protection", "Projectile Protection", "Thorns",//
+				"Respiration", "Depth Strider", "Aqua Affinity", "Sharpness", "Smite", "Bane of Arthropods", "Knockback", "Fire Aspect", "Looting",//
+				"Efficiency", "Silk Touch", "Unbreaking", "Fortune", "Power", "Punch", "Flame", "Infinity", "Luck of the Sea", "Lure", "Frost Walker",//
+				"Mending", "Curse of Binding", "Curse of Vanishing", "Impaling", "Riptide", "Loyalty", "Channeling", "Multishot", "Piercing", "Quick Charge",//
+				"Soul Speed", "Swift Sneak", "Sweeping Edge"];
+	let types = {
+	    helmet:["Protection","Blast Protection", "Fire Protection", "Projectile Protection", "Aqua Affinity", "Respiration", "Thorns", "Mending", "Unbreaking"],
+	    chestplate:["Protection","Blast Protection", "Fire Protection", "Projectile Protection", "Mending", "Thorns", "Unbreaking"],
+	    leggings:["Protection","Blast Protection", "Fire Protection", "Projectile Protection", "Swift Sneak", "Thorns", "Mending", "Unbreaking"],
+	    boots:["Protection","Blast Protection", "Fire Protection", "Projectile Protection", "Depth Strider", "Frost Walker", "Feather Falling", "Soul Speed", "Thorns", "Mending", "Unbreaking"],
+	    sword:["Sharpness", "Smite", "Bane of Arthropods", "Fire Aspect", "Knockback", "Looting", "Sweeping Edge", "Mending", "Unbreaking"],
+	    axe:["Sharpness", "Smite", "Bane of Arthropods", "Efficiency", "Fortune", "Silk Touch", "Mending", "Unbreaking"],
+	    tool:["Efficiency", "Fortune", "Silk Touch", "Mending", "Unbreaking"],
+	    trident:["Channeling", "Loyalty", "Riptide", "Impaling", "Mending", "Unbreaking"],
+	    bow:["Flame", "Infinity", "Power", "Punch", "Mending", "Unbreaking"],
+	    crossbow:["Multishot", "Piercing", "Quick Charge", "Mending", "Unbreaking"],
+	    fishingrod:["Luck of the Sea", "Lure", "Mending", "Unbreaking"],
+	    shears:["Efficiency", "Mending", "Unbreaking"],
+	    other:["Mending", "Unbreaking"]
+	};
+    function typeSelect() {
+        let enchList = types[document.getElementById("type-select").value];
+        let table = document.getElementById("enchantment-select");
+        while (table.rows.length > 0) table.deleteRow(0);
+        let max = 0;
+        enchList.forEach(e => max = Math.max(maxLevel[names.indexOf(e)], max));
+        let topBar = table.insertRow();
+        topBar.insertCell("<td></td>");
+        for (let i = 0; i <= max; i++) {
+            let cell = topBar.insertCell();
+            cell.innerText = i + "";
+            cell.style = "text-align:center";
+        }
+        for (let index in enchList) {
+        	let ench = enchList[index]
+            let row = table.insertRow();
+            row.insertCell().innerText = ench;
+            for (let i = 0; i <= maxLevel[names.indexOf(ench)]; i++) {
+                let cell = row.insertCell();//.innerHtml = "<input type=\"radio\" id=\"unbreaking-1\" name=\"unbreaking\" />";
+                let button = document.createElement("input");
+                button.type = "radio";
+                if (i==0) {
+                    button.checked = true;
+                }
+                cell.append(button);
+            }
+        }
+        
+    }
+</script>
+</head>
+<body>
+
+<h1>Minecraft Optimal Enchantment Combination</h1>
+
+<select name="item-type" id="type-select" onchange="typeSelect()">
+    <option value="type">Select item type</option>
+    
+    <option value="helmet">Helmet</option>
+    <option value="chestplate">Chestplate</option>
+    <option value="leggings">Leggings</option>
+    <option value="boots">Boots</option>
+    <option value="sword">Sword</option>
+    <option value="axe">Axe</option>
+    <option value="tool">Tool</option>
+    <option value="trident">Trident</option>
+    <option value="bow">Bow</option>
+    <option value="crossbow">Crossbow</option>
+    <option value="fishingrod">Fishing Rod</option>
+    <option value="shears">Shears</option>
+
+    <option value="other">Other</option>
+</select>
+
+<p>Select enchantments:</p>
+
+<table id="enchantment-select">
+</table>
+<ol>
+    <li>Step 1</li>
+    <li>Step 2</li>
+    <li>Step 3</li>
+</ol>
+</body>
+</html>
