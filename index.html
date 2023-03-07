@@ -27,6 +27,151 @@
 	    shears:["Efficiency", "Mending", "Unbreaking"],
 	    other:["Mending", "Unbreaking"]
 	};
+	class Enchantment {
+	    isItem;
+	    useXp;
+	    
+	    name;
+	    
+	    cost;
+	    tax;
+	    weight;
+	    
+	    combineCost;
+	    
+	    constructor(name, cost) {
+	    	this.name = name;
+	    	
+	    	this.cost = cost;
+	    	this.tax = 0;
+	    	this.weight = 0;
+
+	    	this.combineCost = 0;
+	    	this.useXp = false;
+	    	this.isItem = false;
+	    }
+	    
+	    static copy(ench) {
+	    	let copied = new Enchantment(ench.name, ench.cost);
+	    	copied.tax = ench.tax;
+	    	copied.weight = ench.weight;
+	    	copied.combineCost = ench.combineCost;
+	    	copied.useXp = ench.useXp;
+	    	copied.isItem = ench.isItem;
+	    	return copied;
+	    }
+	    
+	    static combine(a, b) {
+	        let next = new Enchantment("(" + a.name + " + " + b.name + ")", a.cost + b.cost);
+			next.tax = Math.max(a.tax, b.tax) * 2 + 1;
+			next.combineCost = (b.cost + a.tax + b.tax);
+			next.useXp = a.useXp || b.useXp;
+			next.weight = (next.useXp ? levelsToXp(combineCost) : next.combineCost) + (a.weight + b.weight);
+
+			next.isItem = a.isItem || b.isItem;
+			return next;
+	    }
+	    
+		static levelsToXp(level) {
+			if (level < 17) {
+				return level * level + 6 * level;
+			}
+			if (level < 32) {
+				return Math.floor(2.5 * level * level - 40.5 * level + 360);
+			}
+			return Math.floor(4.5 * level * level - 162.5 * level + 2220);
+		}
+	}
+	class ETree {
+		multiplier;
+		ench;
+		left;
+		right;
+		
+		constructor() {
+			this.multiplier = -1;
+			this.ench = null;
+			this.left = null;
+			this.right = null;
+		}
+		
+		getCompleteEnchantment() {
+			if (this.left != null) {
+				e = Enchantment.combine(this.left.getCompleteEnchantment(), this.right.getCompleteEnchantment());
+				return e;
+			}
+			return e;
+		}
+		
+		getMultiplier() {
+			if (this.multiplier != -1) {
+				return this.multiplier;
+			}
+			this.getMultiplierRec(0);
+			return this.multiplier;
+		}
+
+		getMultiplierRec(m) {
+			this.multiplier = m;
+			if (this.left != null) {
+				this.right.getMultiplierRec(m + 1);
+				this.left.getMultiplierRec(m);
+			}
+		}
+		
+		size() {
+			let size = 1;
+			if (this.left != null) {
+				size += this.left.size();
+				size += this.right.size();
+			}
+			return size;
+		}
+
+		depth() {
+			let size = 1;
+			if (this.left != null) {
+				size += Math.max(this.left.depth(), this.right.depth());
+			}
+			return size;
+		}
+		
+		invalidate() {
+			this.multiplier = -1;
+			this.e = null;
+			if (this.left != null) {
+				this.left.invalidate();
+				this.right.invalidate();
+			}
+		}
+		
+		getNodes() {
+			return this.getNodesRec([]);
+        }
+        
+		getNodesRec(tree) {
+			if (this.left != null) {
+				this.left.getNodes(tree);
+				this.right.getNodes(tree);
+			}
+			tree.push(this);
+			return tree;
+		}
+
+		getLeaves() {
+			return getLeavesRec([]);
+        }
+
+		getLeavesRec(tree) {
+			if (this.left != null) {
+				this.left.getLeaves(tree);
+				this.right.getLeaves(tree);
+			} else {
+				this.tree.push(this);
+			}
+			return tree;
+		}
+	}
     function typeSelect() {
         let enchList = types[document.getElementById("type-select").value];
         let table = document.getElementById("enchantment-select");
@@ -45,15 +190,46 @@
             let row = table.insertRow();
             row.insertCell().innerText = ench;
             for (let i = 0; i <= maxLevel[names.indexOf(ench)]; i++) {
-                let cell = row.insertCell();//.innerHtml = "<input type=\"radio\" id=\"unbreaking-1\" name=\"unbreaking\" />";
+                let cell = row.insertCell();
                 let button = document.createElement("input");
                 button.type = "radio";
-                if (i==0) {
+                if (i===0) {
                     button.checked = true;
                 }
+                button.onchange = changeInput;
+                button.name = ench;
                 cell.append(button);
             }
         }
+        document.getElementById("select-label").innerText = "Select enchantments:";
+        changeInput();
+        
+    }
+    function changeInput() {
+        console.log("update");
+        let steps = document.getElementById("steps");
+        steps.innerHTML = "";
+        let step = document.createElement("li")
+        step.innerText = "Hello World"
+        steps.appendChild(step)
+        let ench = [];
+        let table = document.getElementById("enchantment-select").children[0].children;
+        for (let i = 1; i<table.length;i++) {
+        	console.log(table[i].children[0].innerText);
+        	let row = table[i].children;
+        	let name = row.innerText;
+        	let level = 0;
+        	for (let j = 1; j<row.length;j++) {
+        		if (row[j].children[0].checked == true) {
+        			level = j - 1;
+        		}
+        	}
+        	if (level != 0) {
+        		ench.push(new Enchantment(name+" "+level, level*multiplier[names.indexOf(name)]));
+        	}
+        }
+        console.log(ench);
+
         
     }
 </script>
@@ -81,14 +257,11 @@
     <option value="other">Other</option>
 </select>
 
-<p>Select enchantments:</p>
+<p id="select-label"></p>
 
 <table id="enchantment-select">
 </table>
-<ol>
-    <li>Step 1</li>
-    <li>Step 2</li>
-    <li>Step 3</li>
+<ol id="steps">
 </ol>
 </body>
 </html>
