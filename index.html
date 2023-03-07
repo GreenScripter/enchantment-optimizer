@@ -13,19 +13,19 @@
 				"Mending", "Curse of Binding", "Curse of Vanishing", "Impaling", "Riptide", "Loyalty", "Channeling", "Multishot", "Piercing", "Quick Charge",//
 				"Soul Speed", "Swift Sneak", "Sweeping Edge"];
 	let types = {
-	    helmet:["Protection", "Blast Protection", "Fire Protection", "Projectile Protection", "Aqua Affinity", "Respiration", "Thorns", "Mending", "Unbreaking"],
-	    chestplate:["Protection", "Blast Protection", "Fire Protection", "Projectile Protection", "Mending", "Thorns", "Unbreaking"],
-	    leggings:["Protection", "Blast Protection", "Fire Protection", "Projectile Protection", "Swift Sneak", "Thorns", "Mending", "Unbreaking"],
-	    boots:["Protection", "Blast Protection", "Fire Protection", "Projectile Protection", "Depth Strider", "Frost Walker", "Feather Falling", "Soul Speed", "Thorns", "Mending", "Unbreaking"],
-	    sword:["Sharpness", "Smite", "Bane of Arthropods", "Fire Aspect", "Knockback", "Looting", "Sweeping Edge", "Mending", "Unbreaking"],
-	    axe:["Sharpness", "Smite", "Bane of Arthropods", "Efficiency", "Fortune", "Silk Touch", "Mending", "Unbreaking"],
-	    tool:["Efficiency", "Fortune", "Silk Touch", "Mending", "Unbreaking"],
-	    trident:["Channeling", "Loyalty", "Riptide", "Impaling", "Mending", "Unbreaking"],
-	    bow:["Flame", "Infinity", "Power", "Punch", "Mending", "Unbreaking"],
-	    crossbow:["Multishot", "Piercing", "Quick Charge", "Mending", "Unbreaking"],
-	    fishingrod:["Luck of the Sea", "Lure", "Mending", "Unbreaking"],
-	    shears:["Efficiency", "Mending", "Unbreaking"],
-	    other:["Mending", "Unbreaking"]
+	    helmet:["Protection", "Blast Protection", "Fire Protection", "Projectile Protection", "Aqua Affinity", "Respiration", "Thorns", "Mending", "Unbreaking", "Curse of Binding", "Curse of Vanishing"],
+	    chestplate:["Protection", "Blast Protection", "Fire Protection", "Projectile Protection", "Mending", "Thorns", "Unbreaking", "Curse of Binding", "Curse of Vanishing"],
+	    leggings:["Protection", "Blast Protection", "Fire Protection", "Projectile Protection", "Swift Sneak", "Thorns", "Mending", "Unbreaking", "Curse of Binding", "Curse of Vanishing"],
+	    boots:["Protection", "Blast Protection", "Fire Protection", "Projectile Protection", "Depth Strider", "Frost Walker", "Feather Falling", "Soul Speed", "Thorns", "Mending", "Unbreaking", "Curse of Binding", "Curse of Vanishing"],
+	    sword:["Sharpness", "Smite", "Bane of Arthropods", "Fire Aspect", "Knockback", "Looting", "Sweeping Edge", "Mending", "Unbreaking", "Curse of Vanishing"],
+	    axe:["Sharpness", "Smite", "Bane of Arthropods", "Efficiency", "Fortune", "Silk Touch", "Mending", "Unbreaking", "Curse of Vanishing"],
+	    tool:["Efficiency", "Fortune", "Silk Touch", "Mending", "Unbreaking", "Curse of Vanishing"],
+	    trident:["Channeling", "Loyalty", "Riptide", "Impaling", "Mending", "Unbreaking", "Curse of Vanishing"],
+	    bow:["Flame", "Infinity", "Power", "Punch", "Mending", "Unbreaking", "Curse of Vanishing"],
+	    crossbow:["Multishot", "Piercing", "Quick Charge", "Mending", "Unbreaking", "Curse of Vanishing"],
+	    fishingrod:["Luck of the Sea", "Lure", "Mending", "Unbreaking", "Curse of Vanishing"],
+	    shears:["Efficiency", "Mending", "Unbreaking", "Curse of Vanishing"],
+	    other:["Mending", "Unbreaking", "Curse of Vanishing"]
 	};
 	
 	let selectedItemType = "Item";
@@ -335,7 +335,7 @@
 		let answer = getShallowTree(getBestTrees(ench));
 		fill(answer, ench, true);
 		let answerSteps = answer.getNodes();
-		answer.print("", true);
+// 		answer.print("", true);
 		for (let i = 0; i < answerSteps.length; i++) {
 			let answerStep = answerSteps[i];
 			if (answerStep.left == null) {
