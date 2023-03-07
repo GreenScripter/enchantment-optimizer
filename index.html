@@ -43,6 +43,9 @@
 	    
 	    combineCost;
 	    
+	    levelWeight;
+	    xpWeight;
+	    
 	    constructor(name, cost) {
 	    	this.name = name;
 	    	this.simpleName = name;
@@ -52,6 +55,8 @@
 	    	this.weight = 0;
 
 	    	this.combineCost = 0;
+	    	this.levelWeight = 0;
+	    	this.xpWeight = 0;
 	    	this.useXp = false;
 	    	this.isItem = false;
 	    }
@@ -62,6 +67,8 @@
 	    	copied.simpleName = ench.simpleName;
 	    	copied.weight = ench.weight;
 	    	copied.combineCost = ench.combineCost;
+	    	copied.levelWeight = ench.levelWeight;
+	    	copied.xpWeight = ench.xpWeight;
 	    	copied.useXp = ench.useXp;
 	    	copied.isItem = ench.isItem;
 	    	return copied;
@@ -74,6 +81,8 @@
 			next.combineCost = (b.cost + a.tax + b.tax);
 			next.useXp = a.useXp || b.useXp;
 			next.weight = (next.useXp ? Enchantment.levelsToXp(next.combineCost) : next.combineCost) + (a.weight + b.weight);
+			next.xpWeight = (Enchantment.levelsToXp(next.combineCost)) + (a.xpWeight + b.xpWeight);
+			next.levelWeight = (next.combineCost) + (a.levelWeight + b.levelWeight);
 
 			next.isItem = a.isItem || b.isItem;
 			return next;
@@ -223,8 +232,43 @@
 		return res;
 	}
 	
+	function getAllMinimumViableTrees(size) {
+	
+		if (size <= 0 || (size % 2) == 0) return [];
+		let max = Math.ceil(Math.log2(size));
+		let res = [];
+		if (size == 1) {
+			res.push(new ETree());
+			return res;
+		}
+	
+		for (let i = 1; i < size; i += 2) {
+			if (i < size - i - 1) continue;//skip trees that can't work.
+	
+			let leftSubTrees = getAllMinimumViableTrees(i);
+			let rightSubTrees = getAllMinimumViableTrees(size - i - 1);
+	
+			for (let li = 0; li < leftSubTrees.length; li++) {
+				let l = leftSubTrees[li];
+				for (let ri = 0; ri < rightSubTrees.length; ri++) {
+					let r = rightSubTrees[ri];
+					let root = new ETree();
+					root.left = l;
+					root.right = r;
+					if (root.depth() <= max) {
+						res.push(root);
+					}
+				}
+			}
+		}
+	
+		return res;
+	}
+	
 	function getBestTrees(en) {
-		let trees = getAllViableTrees(en.length * 2 + 1);
+	    let repairOptimize = document.getElementById("optimize-repair").checked;
+
+		let trees = repairOptimize ? getAllMinimumViableTrees(en.length * 2 + 1) : getAllViableTrees(en.length * 2 + 1);
 
 		let best = [];
 		let bestV = Infinity;
@@ -297,7 +341,6 @@
 			en.push(overallBestEn[i]);
 		}
 
-		
 		return result;
 	}
 	
@@ -415,7 +458,7 @@
         	steps.appendChild(step)
 		}
 		let result = document.createElement("p")
-		result.innerText = "You now have (" + answer.ench.simpleName + ") with a repair cost of " + answer.ench.tax + " at a total cost of " + answer.ench.weight + (useXp.checked ? " xp." : " levels.");
+		result.innerText = "You now have (" + answer.ench.simpleName + ") with a repair cost of " + answer.ench.tax + " at a total cost of " + answer.ench.levelWeight + " levels or " + answer.ench.xpWeight + " xp.";
         steps.appendChild(result)
         
     }
@@ -446,6 +489,8 @@
 </select><br>
 <input type="checkbox" id="use-xp" onchange="changeInput()">
 <label for="use-xp">Optimize total experience instead of total levels.</label><br>
+<input type="checkbox" id="optimize-repair" onchange="changeInput()">
+<label for="optimize-repair">Optimize final item repair cost.</label><br>
 
 <p id="select-label"></p>
 
