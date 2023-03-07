@@ -13,10 +13,10 @@
 				"Mending", "Curse of Binding", "Curse of Vanishing", "Impaling", "Riptide", "Loyalty", "Channeling", "Multishot", "Piercing", "Quick Charge",//
 				"Soul Speed", "Swift Sneak", "Sweeping Edge"];
 	let types = {
-	    helmet:["Protection","Blast Protection", "Fire Protection", "Projectile Protection", "Aqua Affinity", "Respiration", "Thorns", "Mending", "Unbreaking"],
-	    chestplate:["Protection","Blast Protection", "Fire Protection", "Projectile Protection", "Mending", "Thorns", "Unbreaking"],
-	    leggings:["Protection","Blast Protection", "Fire Protection", "Projectile Protection", "Swift Sneak", "Thorns", "Mending", "Unbreaking"],
-	    boots:["Protection","Blast Protection", "Fire Protection", "Projectile Protection", "Depth Strider", "Frost Walker", "Feather Falling", "Soul Speed", "Thorns", "Mending", "Unbreaking"],
+	    helmet:["Protection", "Blast Protection", "Fire Protection", "Projectile Protection", "Aqua Affinity", "Respiration", "Thorns", "Mending", "Unbreaking"],
+	    chestplate:["Protection", "Blast Protection", "Fire Protection", "Projectile Protection", "Mending", "Thorns", "Unbreaking"],
+	    leggings:["Protection", "Blast Protection", "Fire Protection", "Projectile Protection", "Swift Sneak", "Thorns", "Mending", "Unbreaking"],
+	    boots:["Protection", "Blast Protection", "Fire Protection", "Projectile Protection", "Depth Strider", "Frost Walker", "Feather Falling", "Soul Speed", "Thorns", "Mending", "Unbreaking"],
 	    sword:["Sharpness", "Smite", "Bane of Arthropods", "Fire Aspect", "Knockback", "Looting", "Sweeping Edge", "Mending", "Unbreaking"],
 	    axe:["Sharpness", "Smite", "Bane of Arthropods", "Efficiency", "Fortune", "Silk Touch", "Mending", "Unbreaking"],
 	    tool:["Efficiency", "Fortune", "Silk Touch", "Mending", "Unbreaking"],
@@ -27,11 +27,15 @@
 	    shears:["Efficiency", "Mending", "Unbreaking"],
 	    other:["Mending", "Unbreaking"]
 	};
+	
+	let selectedItemType = "Item";
+	
 	class Enchantment {
 	    isItem;
 	    useXp;
 	    
 	    name;
+	    simpleName;
 	    
 	    cost;
 	    tax;
@@ -41,6 +45,7 @@
 	    
 	    constructor(name, cost) {
 	    	this.name = name;
+	    	this.simpleName = name;
 	    	
 	    	this.cost = cost;
 	    	this.tax = 0;
@@ -54,6 +59,7 @@
 	    static copy(ench) {
 	    	let copied = new Enchantment(ench.name, ench.cost);
 	    	copied.tax = ench.tax;
+	    	copied.simpleName = ench.simpleName;
 	    	copied.weight = ench.weight;
 	    	copied.combineCost = ench.combineCost;
 	    	copied.useXp = ench.useXp;
@@ -63,6 +69,7 @@
 	    
 	    static combine(a, b) {
 	        let next = new Enchantment("(" + a.name + " + " + b.name + ")", a.cost + b.cost);
+	        next.simpleName = a.simpleName + " + " + b.simpleName;
 			next.tax = Math.max(a.tax, b.tax) * 2 + 1;
 			next.combineCost = (b.cost + a.tax + b.tax);
 			next.useXp = a.useXp || b.useXp;
@@ -97,10 +104,10 @@
 		
 		getCompleteEnchantment() {
 			if (this.left != null) {
-				e = Enchantment.combine(this.left.getCompleteEnchantment(), this.right.getCompleteEnchantment());
-				return e;
+				this.ench = Enchantment.combine(this.left.getCompleteEnchantment(), this.right.getCompleteEnchantment());
+				return this.ench;
 			}
-			return e;
+			return this.ench;
 		}
 		
 		getMultiplier() {
@@ -138,7 +145,7 @@
 		
 		invalidate() {
 			this.multiplier = -1;
-			this.e = null;
+			this.ench = null;
 			if (this.left != null) {
 				this.left.invalidate();
 				this.right.invalidate();
@@ -151,29 +158,127 @@
         
 		getNodesRec(tree) {
 			if (this.left != null) {
-				this.left.getNodes(tree);
-				this.right.getNodes(tree);
+				this.left.getNodesRec(tree);
+				this.right.getNodesRec(tree);
 			}
 			tree.push(this);
 			return tree;
 		}
 
 		getLeaves() {
-			return getLeavesRec([]);
+			return this.getLeavesRec([]);
         }
 
 		getLeavesRec(tree) {
 			if (this.left != null) {
-				this.left.getLeaves(tree);
-				this.right.getLeaves(tree);
+				this.left.getLeavesRec(tree);
+				this.right.getLeavesRec(tree);
 			} else {
-				this.tree.push(this);
+				tree.push(this);
 			}
+
 			return tree;
 		}
+		
+		print(indent, last) {
+			console.log(indent + "+- " + this.multiplier + " " + (this.ench!=null?this.ench.simpleName:""));
+			indent += last ? "   " : "|  ";
+
+			if (this.left != null) {
+				this.right.print(indent, false);
+				this.left.print(indent, true);
+			}
+
+		}
 	}
+	
+	function getAllViableTrees(size) {
+	
+		if (size <= 0 || (size % 2) == 0) return [];
+	
+		let res = [];
+		if (size == 1) {
+			res.push(new ETree());
+			return res;
+		}
+	
+		for (let i = 1; i < size; i += 2) {
+			if (i < size - i - 1) continue;//skip trees that can't work.
+	
+			let leftSubTrees = getAllViableTrees(i);
+			let rightSubTrees = getAllViableTrees(size - i - 1);
+	
+			for (let li = 0; li < leftSubTrees.length; li++) {
+				let l = leftSubTrees[li];
+				for (let ri = 0; ri < rightSubTrees.length; ri++) {
+					let r = rightSubTrees[ri];
+					let root = new ETree();
+					root.left = l;
+					root.right = r;
+					res.push(root);
+				}
+			}
+		}
+	
+		return res;
+	}
+	
+	function getBestTrees(en) {
+		let trees = getAllViableTrees(en.length * 2 + 1);
+
+		let best = [];
+		let bestV = Infinity;
+		for (let i = 0; i<trees.length; i++) {
+			let t = trees[i];
+			fill(t, en, true);
+			let e = t.getCompleteEnchantment();
+			if (e.weight < 0) {
+				continue;
+			}
+			if (e.weight < bestV) {
+				best = [];
+				bestV = e.weight;
+			}
+			if (e.weight == bestV) {
+				best.push(t);
+			}
+
+		}
+		return best;
+	}
+	
+	function fill(t, en, sort) {
+		if (sort) en.sort((a,b) => b.cost - a.cost);
+		t.invalidate();
+		t.getMultiplier();
+		let nodes = t.getLeaves();
+
+		nodes.sort((a,b) => a.multiplier - b.multiplier);
+		for (let i = 0; i < en.length; i++) {
+			nodes[i + 1].ench = en[i];
+		}
+		nodes[0].ench = new Enchantment(selectedItemType, 0);
+		nodes[0].ench.isItem = true;
+		return t.getCompleteEnchantment();
+	}
+	
+	function getShallowTree(trees) {
+		let bestTree = null;
+		let bestDepth = Infinity;
+		for (let i = 0; i < trees.length; i++) {
+			let t = trees[i];
+			if (t.depth() < bestDepth) {
+				bestDepth = t.depth();
+				bestTree = t;
+			}
+		}
+		return bestTree;
+	}
+	
     function typeSelect() {
-        let enchList = types[document.getElementById("type-select").value];
+    	let dropdown = document.getElementById("type-select");
+    	selectedItemType = dropdown.options[dropdown.selectedIndex].text;
+        let enchList = types[dropdown.value];
         let table = document.getElementById("enchantment-select");
         while (table.rows.length > 0) table.deleteRow(0);
         let max = 0;
@@ -205,19 +310,16 @@
         changeInput();
         
     }
+    
     function changeInput() {
         console.log("update");
         let steps = document.getElementById("steps");
         steps.innerHTML = "";
-        let step = document.createElement("li")
-        step.innerText = "Hello World"
-        steps.appendChild(step)
         let ench = [];
         let table = document.getElementById("enchantment-select").children[0].children;
         for (let i = 1; i<table.length;i++) {
-        	console.log(table[i].children[0].innerText);
         	let row = table[i].children;
-        	let name = row.innerText;
+        	let name = row[0].innerText;
         	let level = 0;
         	for (let j = 1; j<row.length;j++) {
         		if (row[j].children[0].checked == true) {
@@ -225,11 +327,27 @@
         		}
         	}
         	if (level != 0) {
-        		ench.push(new Enchantment(name+" "+level, level*multiplier[names.indexOf(name)]));
+        		ench.push(new Enchantment(name + " " + level, level*multiplier[names.indexOf(name)]));
         	}
         }
         console.log(ench);
-
+// 		getBestTrees(ench).forEach(t=>console.log(t.ench.name));
+		let answer = getShallowTree(getBestTrees(ench));
+		fill(answer, ench, true);
+		let answerSteps = answer.getNodes();
+		answer.print("", true);
+		for (let i = 0; i < answerSteps.length; i++) {
+			let answerStep = answerSteps[i];
+			if (answerStep.left == null) {
+				continue;
+			}
+			let step = document.createElement("li")
+        	step.innerText = "Combine (" + answerStep.left.ench.simpleName + ") and (" + answerStep.right.ench.simpleName + ") for "+answerStep.ench.combineCost+" levels.";
+        	steps.appendChild(step)
+		}
+		let result = document.createElement("p")
+		result.innerText = "You now have ("+answer.ench.simpleName+") with a repair cost of "+answer.ench.tax+" at a total cost of "+answer.ench.weight+" levels.";
+        steps.appendChild(result)
         
     }
 </script>
@@ -237,6 +355,7 @@
 <body>
 
 <h1>Minecraft Optimal Enchantment Combination</h1>
+<p>Find the optimal order to combine enchantments in to spend the fewest possible levels.</p>
 
 <select name="item-type" id="type-select" onchange="typeSelect()">
     <option value="type">Select item type</option>
