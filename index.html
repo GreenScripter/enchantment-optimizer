@@ -381,6 +381,23 @@
 		return e.weight;
 	}
 	
+	function buildMinimumTree(size) {
+		let tree = new ETree();
+		let queue = [];
+		queue.push(tree);
+
+		while (tree.size() < size * 2 + 1) {
+			let next = queue.shift();
+			next.left = new ETree();
+			next.right = new ETree();
+			queue.push(next.left);
+			queue.push(next.right);
+		}
+		let result = [];
+		result.push(tree);
+		return result;
+	}
+	
     function typeSelect() {
     	let dropdown = document.getElementById("type-select");
     	selectedItemType = dropdown.options[dropdown.selectedIndex].text;
@@ -442,12 +459,17 @@
         }
         console.log(ench);
 // 		getBestTrees(ench).forEach(t=>console.log(t.ench.name));
-		let allTrees = getBestTrees(ench);
+		let allTrees = ench.length > 16 ? buildMinimumTree(ench.length) : getBestTrees(ench);
 		
-		let answer = useXp.checked ? getBestTree(allTrees, ench) : getShallowTree(allTrees);
+		let answer = (useXp.checked || ench.length > 16) ? getBestTree(allTrees, ench) : getShallowTree(allTrees);
 		fill(answer, ench, false);
 		let answerSteps = answer.getNodes();
 // 		answer.print("", true);
+		if (ench.length > 16) {
+			let result = document.createElement("p")
+			result.innerText = "Due to there being a large number of enchantments, this result is an approximation.";
+        	steps.appendChild(result)
+		}
 		for (let i = 0; i < answerSteps.length; i++) {
 			let answerStep = answerSteps[i];
 			if (answerStep.left == null) {
