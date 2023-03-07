@@ -522,12 +522,7 @@
 		name.type = "text";
 		name.value = "Modded Enchantment "+table.rows.length;
 		let lastName = name.value;
-		name.onfocusout = function() {
-			if (lastName != name.value)	{
-				lastName = name.value;
-				changeInput();
-			}
-		};
+		name.onchange = changeInput;
 		
 		row.insertCell().append(name);
 		
