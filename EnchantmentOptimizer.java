@@ -40,6 +40,8 @@ public class EnchantmentOptimizer {
 	List<ETree> trees = new ArrayList<>();
 	List<Enchantment> ench = new ArrayList<>();
 	JCheckBox useXp = new JCheckBox("Use XP instead of levels.");
+	JCheckBox useRepairCost = new JCheckBox("Optimize for repair cost.");
+	JCheckBox approximate = new JCheckBox("Approximate for speed.");
 
 	public static void main(String[] args) {
 		new EnchantmentOptimizer();
@@ -75,6 +77,12 @@ public class EnchantmentOptimizer {
 		sidebar.add(useXp);
 		useXp.addActionListener(this::settingsChanged);
 
+		sidebar.add(useRepairCost);
+		useRepairCost.addActionListener(this::settingsChanged);
+
+		sidebar.add(approximate);
+		approximate.addActionListener(this::settingsChanged);
+
 		frame.add(treePanel);
 		frame.setVisible(true);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -91,7 +99,8 @@ public class EnchantmentOptimizer {
 				}
 			}
 		}
-		List<ETree> trees = getBestTrees(en);
+
+		List<ETree> trees = approximate.isSelected() ? buildMinimumTree(en.size()) : useRepairCost.isSelected() ? getBestMinimumTrees(en) : getBestTrees(en);
 		if (useXp.isSelected()) {
 			TreeOrder o = getBestTree(trees, en);
 
@@ -107,6 +116,17 @@ public class EnchantmentOptimizer {
 		//		List<Enchantment> en2 = new ArrayList<>(en);
 		//		en2.add(0, new Enchantment("Item", 0).item());
 		//		forceOptimize(en2).forEach(System.out::println);
+		//		System.out.println();
+		//		Set<Enchantment> optimals = new HashSet<>();
+		//		trees.forEach(t -> {
+		//			fill(t, ench, true);
+		//			optimals.add(t.ench);
+		//			System.out.println(t.ench);
+		//		});
+
+		//		fill(alt, ench, true);
+		//		System.out.println(optimals.contains(alt.ench));
+		//		System.out.println(alt.ench);
 
 	}
 
@@ -185,10 +205,10 @@ public class EnchantmentOptimizer {
 						y += fm.getHeight();
 
 						y += fm.getHeight();
-						g2.drawString("Combine " + tree.left.e + " and " + tree.right.e + "", 10, y);
+						g2.drawString("Combine " + tree.left.ench + " and " + tree.right.ench + "", 10, y);
 
 						y += fm.getHeight();
-						g2.drawString("to make " + tree.e + "", 10, y);
+						g2.drawString("to make " + tree.ench + "", 10, y);
 					}
 				}
 			}
@@ -197,22 +217,22 @@ public class EnchantmentOptimizer {
 
 		public void drawTree(ETree root, ETree tree, int x, int y, int width, Graphics2D g2) {
 			points.put(new Point(x, y + 10), root);
-			enchantmentPoints.put(new Point(x, y + 10), tree.e);
-			if (tree.e.isItem) {
+			enchantmentPoints.put(new Point(x, y + 10), tree.ench);
+			if (tree.ench.isItem) {
 				g2.setColor(new Color(200, 255, 255));
-			} else if (tree.e.tax == 0) {
+			} else if (tree.ench.tax == 0) {
 				g2.setColor(new Color(255, 200, 255));
 			} else {
 				g2.setColor(Color.white);
 			}
-			enchantmentCopies.put(tree.e, tree.multiplier);
+			enchantmentCopies.put(tree.ench, tree.multiplier);
 			g2.fillOval(x - 10, y, 20, 20);
 			g2.setColor(Color.black);
 			FontMetrics fm = g2.getFontMetrics();
 			//			String label = tree.multiplier + "";
 			//			g2.drawString(label, x - fm.stringWidth(label) / 2, y + 10 + fm.getAscent() / 2);
 
-			String text = tree.e.toString();
+			String text = tree.ench.toString();
 			//			String text = "(" + tree.e.cost + ", " + tree.e.tax + ", " + tree.e.weight + ")";
 			g2.drawString(text, x - fm.stringWidth(text) / 2, y + 30);
 
@@ -300,6 +320,67 @@ public class EnchantmentOptimizer {
 
 	}
 
+	public static List<ETree> getAllViableTrees(int size) {
+
+		if (size <= 0 || (size & 1) == 0) return new ArrayList<>();
+
+		List<ETree> res = new ArrayList<>();
+		if (size == 1) {
+			res.add(new ETree());
+			return res;
+		}
+
+		for (int i = 1; i < size; i += 2) {
+			if (i < size - i - 1) continue;//skip trees that can't work.
+
+			List<ETree> leftSubTrees = getAllViableTrees(i);
+			List<ETree> rightSubTrees = getAllViableTrees(size - i - 1);
+
+			for (ETree l : leftSubTrees) {
+				for (ETree r : rightSubTrees) {
+					ETree root = new ETree();
+					root.left = l;
+					root.right = r;
+					res.add(root);
+				}
+			}
+		}
+
+		return res;
+	}
+
+	public static List<ETree> getAllMinimumViableTrees(int size) {
+
+		if (size <= 0 || (size & 1) == 0) return new ArrayList<>();
+		int max = (int) Math.ceil(Math.log(size) / Math.log(2));
+
+		List<ETree> res = new ArrayList<>();
+		if (size == 1) {
+			res.add(new ETree());
+			return res;
+		}
+
+		for (int i = 1; i < size; i += 2) {
+			if (i < size - i - 1) continue;//skip trees that can't work.
+
+			List<ETree> leftSubTrees = getAllMinimumViableTrees(i);
+			List<ETree> rightSubTrees = getAllMinimumViableTrees(size - i - 1);
+
+			for (ETree l : leftSubTrees) {
+				for (ETree r : rightSubTrees) {
+					ETree root = new ETree();
+					root.left = l;
+					root.right = r;
+					if (root.depth() <= max) {
+						res.add(root);
+					}
+				}
+			}
+		}
+
+		return res;
+	}
+
 	public static List<ETree> getBestTrees(List<Enchantment> en) {
 		List<ETree> trees = getAllViableTrees(en.size() * 2 + 1);
 
@@ -323,6 +404,73 @@ public class EnchantmentOptimizer {
 		return best;
 	}
 
+	public static List<ETree> getBestMinimumTrees(List<Enchantment> en) {
+		List<ETree> trees = getAllMinimumViableTrees(en.size() * 2 + 1);
+
+		List<ETree> best = new ArrayList<>();
+		int bestV = Integer.MAX_VALUE;
+		for (ETree t : trees) {
+			fill(t, en, true);
+			Enchantment e = t.getCompleteEnchantment();
+			if (e.weight < 0) {
+				continue;
+			}
+			if (e.weight < bestV) {
+				best.clear();
+				bestV = e.weight;
+			}
+			if (e.weight == bestV) {
+				best.add(t);
+			}
+
+		}
+		return best;
+	}
+
+	public static ETree getABestTree(List<Enchantment> en) {
+		if (en.size() == 0) {
+			return new ETree();
+		}
+		List<Enchantment> en2 = new ArrayList<>(en);
+		en2.remove(en2.size() - 1);
+
+		ETree subtree = getABestTree(en2);
+
+		List<ETree> leaves = subtree.getLeaves(new ArrayList<>());
+
+		ETree bestTree = null;
+		int best = Integer.MAX_VALUE;
+
+		for (int i = 0; i < leaves.size(); i++) {
+			ETree copy = new ETree(subtree);
+			List<ETree> leaves2 = copy.getLeaves(new ArrayList<>());
+			leaves2.get(i).left = new ETree();
+			leaves2.get(i).right = new ETree();
+
+			fill(copy, en, true);
+			if (copy.getCompleteEnchantment().weight < best) {
+				best = copy.ench.weight;
+				bestTree = copy;
+			}
+		}
+
+		return bestTree;
+	}
+
+	public static Enchantment fill(ETree t, List<Enchantment> en, boolean sort) {
+		if (sort) en.sort(Comparator.comparingInt(e -> -e.cost));
+		t.invalidate();
+		t.getMultiplier();
+		List<ETree> nodes = t.getLeaves(new ArrayList<>());
+		nodes.sort(Comparator.comparingInt(e -> e.multiplier));
+		for (int i = 0; i < en.size(); i++) {
+			nodes.get(i + 1).ench = en.get(i);
+		}
+		nodes.get(0).ench = new Enchantment("Item", 0).item();
+		return t.getCompleteEnchantment();
+
+	}
+
 	public static TreeOrder getBestTree(List<ETree> trees, List<Enchantment> en) {
 		int best = Integer.MAX_VALUE;
 		TreeOrder result = null;
@@ -331,7 +479,7 @@ public class EnchantmentOptimizer {
 			List<Enchantment> bestEn = findPermute(tree, en);
 			if (getWeight(tree, bestEn) < best) {
 				result = new TreeOrder(tree, bestEn);
-				best = tree.e.weight;
+				best = tree.ench.weight;
 			}
 
 		}
@@ -371,7 +519,7 @@ public class EnchantmentOptimizer {
 				for (int j = i + 1; j < en2.size(); j++) {
 					swap(i, j, en2);
 					if (getWeight(tree, en2) < best) {
-						best = tree.e.weight;
+						best = tree.ench.weight;
 						System.out.println(i + " " + j);
 						loop = true;
 						continue loop;
@@ -395,6 +543,24 @@ public class EnchantmentOptimizer {
 		return e.weight;
 	}
 
+	public static List<ETree> buildMinimumTree(int size) {
+		ETree tree = new ETree();
+		List<ETree> queue = new ArrayList<>();
+		queue.add(tree);
+
+		while (tree.size() < size * 2 + 1) {
+			ETree next = queue.remove(0);
+			next.left = new ETree();
+			next.right = new ETree();
+			queue.add(next.left);
+			queue.add(next.right);
+		}
+		tree.getMultiplier();
+		List<ETree> result = new ArrayList<>();
+		result.add(tree);
+		return result;
+	}
+
 	public static Enchantment approximate(List<Enchantment> en) {
 		int[] values = new int[en.size() * 2 + 1];
 		Enchantment[] enchantments = new Enchantment[en.size() * 2 + 1];
@@ -413,20 +579,6 @@ public class EnchantmentOptimizer {
 		return enchantments[0];
 	}
 
-	public static Enchantment fill(ETree t, List<Enchantment> en, boolean sort) {
-		if (sort) en.sort(Comparator.comparingInt(e -> -e.cost));
-		t.invalidate();
-		t.getMultiplier();
-		List<ETree> nodes = t.getLeaves(new ArrayList<>());
-		nodes.sort(Comparator.comparingInt(e -> e.multiplier));
-		for (int i = 0; i < en.size(); i++) {
-			nodes.get(i + 1).e = en.get(i);
-		}
-		nodes.get(0).e = new Enchantment("Item", 0).item();
-		return t.getCompleteEnchantment();
-
-	}
-
 	public static Enchantment fillPermute(ETree t, List<Enchantment> en) {
 		en.sort(Comparator.comparingInt(e -> -e.cost));
 		t.invalidate();
@@ -434,9 +586,9 @@ public class EnchantmentOptimizer {
 		List<ETree> nodes = t.getLeaves(new ArrayList<>());
 		nodes.sort(Comparator.comparingInt(e -> e.multiplier));
 		for (int i = 0; i < en.size(); i++) {
-			nodes.get(i + 1).e = en.get(i);
+			nodes.get(i + 1).ench = en.get(i);
 		}
-		nodes.get(0).e = new Enchantment("Item", 0).item();
+		nodes.get(0).ench = new Enchantment("Item", 0).item();
 		return t.getCompleteEnchantment();
 
 	}
@@ -464,35 +616,6 @@ public class EnchantmentOptimizer {
 		alignWith.add(0, tree);
 
 		return permutes;
-	}
-
-	public static List<ETree> getAllViableTrees(int size) {
-
-		if (size <= 0 || (size & 1) == 0) return new ArrayList<>();
-
-		List<ETree> res = new ArrayList<>();
-		if (size == 1) {
-			res.add(new ETree());
-			return res;
-		}
-
-		for (int i = 1; i < size; i += 2) {
-			if (i < size - i - 1) continue;//skip trees that can't work.
-
-			List<ETree> leftSubTrees = getAllViableTrees(i);
-			List<ETree> rightSubTrees = getAllViableTrees(size - i - 1);
-
-			for (ETree l : leftSubTrees) {
-				for (ETree r : rightSubTrees) {
-					ETree root = new ETree();
-					root.left = l;
-					root.right = r;
-					res.add(root);
-				}
-			}
-		}
-
-		return res;
 	}
 
 	public static List<Location> fill(int[] values, int pos, int value) {
@@ -558,7 +681,7 @@ public class EnchantmentOptimizer {
 	static class ETree {
 
 		int multiplier = -1;
-		Enchantment e;
+		Enchantment ench;
 		ETree left;
 		ETree right;
 
@@ -566,12 +689,21 @@ public class EnchantmentOptimizer {
 
 		}
 
+		public ETree(ETree tree) {
+			multiplier = tree.multiplier;
+			ench = tree.ench;
+			if (tree.left != null) {
+				left = new ETree(tree.left);
+				right = new ETree(tree.right);
+			}
+		}
+
 		public Enchantment getCompleteEnchantment() {
 			if (left != null) {
-				e = new Enchantment(left.getCompleteEnchantment(), right.getCompleteEnchantment());
-				return e;
+				ench = new Enchantment(left.getCompleteEnchantment(), right.getCompleteEnchantment());
+				return ench;
 			}
-			return e;
+			return ench;
 		}
 
 		public int getMultiplier() {
@@ -605,14 +737,14 @@ public class EnchantmentOptimizer {
 		public int depth() {
 			int size = 1;
 			if (left != null) {
-				size += Math.max(left.size(), right.size());
+				size += Math.max(left.depth(), right.depth());
 			}
 			return size;
 		}
 
 		public void invalidate() {
 			multiplier = -1;
-			e = null;
+			ench = null;
 			if (left != null) {
 				left.invalidate();
 				right.invalidate();
@@ -620,7 +752,7 @@ public class EnchantmentOptimizer {
 		}
 
 		public String toString() {
-			return multiplier + " x " + e;
+			return multiplier + " x " + ench;
 		}
 
 		public void print() {
@@ -684,6 +816,9 @@ public class EnchantmentOptimizer {
 		boolean isItem = false;
 		boolean useXp = false;
 
+		int xpWeight;
+		int levelWeight;
+
 		public Enchantment(String name, int cost) {
 			this.cost = cost;
 			this.name = name;
@@ -696,11 +831,12 @@ public class EnchantmentOptimizer {
 			combineCost = (b.cost + a.tax + b.tax);
 			useXp = a.useXp || b.useXp;
 			weight = (useXp ? levelsToXp(combineCost) : combineCost) + (a.weight + b.weight);
+			xpWeight = levelsToXp(combineCost) + (a.xpWeight + b.xpWeight);
+			levelWeight = combineCost + (a.levelWeight + b.levelWeight);
 
 			isItem = a.isItem || b.isItem;
 			if (!a.isItem && b.isItem) {
 				new IllegalArgumentException("No items in right slot.").printStackTrace();
-				;
 			}
 		}
 
@@ -741,7 +877,7 @@ public class EnchantmentOptimizer {
 		}
 
 		public String toString() {
-			return name + (combineCost > 0 ? " " + combineCost + ", " + weight : "");
+			return name + (combineCost > 0 ? " " + combineCost + ", " + levelWeight + ", " + xpWeight : "");
 		}
 
 		@Override
