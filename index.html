@@ -404,6 +404,13 @@
         let enchList = types[dropdown.value];
         let table = document.getElementById("enchantment-select");
         while (table.rows.length > 0) table.deleteRow(0);
+        let table2 = document.getElementById("modded-table");
+        while (table2.rows.length > 0) table2.deleteRow(0);
+        let modded = document.getElementById("modded-section");
+        modded.hidden = false;
+        let label = document.getElementById("modded-label");
+    	label.innerText = "Modded enchantments";
+
         let max = 0;
         enchList.forEach(e => max = Math.max(maxLevel[names.indexOf(e)], max));
         let topBar = table.insertRow();
@@ -438,7 +445,6 @@
         console.log("update");
         let steps = document.getElementById("steps");
         let useXp = document.getElementById("use-xp");
-        steps.innerHTML = "";
         let ench = [];
         let table = document.getElementById("enchantment-select").children[0].children;
         for (let i = 1; i<table.length;i++) {
@@ -453,14 +459,32 @@
         	if (level != 0) {
         		ench.push(new Enchantment(name + " " + level, level * multiplier[names.indexOf(name)]));
         		if (useXp.checked) {
-        			ench[ench.length-1].useXp = true;
+        			ench[ench.length - 1].useXp = true;
         		}
         	}
         }
+        
+        if (document.getElementById("modded-table").rows.length > 0){
+        let moddedTable = document.getElementById("modded-table").children[0].children;
+        for (let i = 0; i<moddedTable.length;i++) {
+        	let row = moddedTable[i].children;
+        	let name = row[1].children[0].value;
+        	let level = Number(row[3].children[0].value);
+
+        	if (level != 0) {
+        		ench.push(new Enchantment(name, level));
+        		if (useXp.checked) {
+        			ench[ench.length - 1].useXp = true;
+        		}
+        	}
+        }
+        }
+        
         console.log(ench);
 // 		getBestTrees(ench).forEach(t=>console.log(t.ench.name));
 		let allTrees = ench.length > 16 ? buildMinimumTree(ench.length) : getBestTrees(ench);
-		
+		steps.innerHTML = "";
+
 		let answer = (useXp.checked || ench.length > 16) ? getBestTree(allTrees, ench) : getShallowTree(allTrees);
 		fill(answer, ench, false);
 		let answerSteps = answer.getNodes();
@@ -483,6 +507,56 @@
 		result.innerText = "You now have (" + answer.ench.simpleName + ") with a repair cost of " + answer.ench.tax + " at a total cost of " + answer.ench.levelWeight + " levels or " + answer.ench.xpWeight + " xp.";
         steps.appendChild(result)
         
+    }
+    
+    function addModded() {
+    	let modded = document.getElementById("modded-section");
+    	let label = document.getElementById("modded-label");
+    	label.innerText = "Modded enchantments\nEnter enchantment name and the level cost to combine it with an unenchanted item in an anvil.";
+    	let table = document.getElementById("modded-table");
+    	let row = table.insertRow();
+    	
+    	row.insertCell().append("Name");
+    	
+    	let name = document.createElement("input");
+		name.type = "text";
+		name.value = "Modded Enchantment "+table.rows.length;
+		let lastName = name.value;
+		name.onfocusout = function() {
+			if (lastName != name.value)	{
+				lastName = name.value;
+				changeInput();
+			}
+		};
+		
+		row.insertCell().append(name);
+		
+		row.insertCell().append("Level Cost");
+
+		let cost = document.createElement("input");
+		cost.type = "number";
+		cost.value = 1;
+		cost.min = 1;
+		cost.max = 100;
+		cost.size = 4;
+		cost.onchange = changeInput;
+		
+		row.insertCell().append(cost);
+		
+		let remove = document.createElement("input");
+		remove.type = "button";
+		remove.value = "X";
+		remove.onclick = document.getElementById("remove-template").onclick;
+		
+		row.insertCell().append(remove);
+		
+		changeInput();
+
+    }
+    
+    function removeModded(element) {
+    	element.parentElement.parentElement.remove();
+    	changeInput();
     }
 </script>
 </head>
@@ -512,15 +586,22 @@
 
     <option value="other">Other</option>
 </select><br>
-<input type="checkbox" id="use-xp" onchange="changeInput()">
+<input type="checkbox" id="use-xp" onchange="changeInput()" checked>
 <label for="use-xp">Optimize total experience instead of total levels.</label><br>
 <input type="checkbox" id="optimize-repair" onchange="changeInput()">
 <label for="optimize-repair">Optimize final item repair cost.</label><br>
 
 <p id="select-label"></p>
-
 <table id="enchantment-select">
 </table>
+<p id="modded-section" hidden>
+	<label for="modded-section" id="modded-label">Modded enchantments</label><br>
+	<button onclick="addModded()">Add modded enchantment</button>
+	<button id="remove-template" onclick="removeModded(this)" hidden></button>
+	<table id="modded-table">
+	</table>
+</p>
+
 <ol id="steps">
 </ol>
 </body>
