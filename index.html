@@ -73,7 +73,7 @@
 			next.tax = Math.max(a.tax, b.tax) * 2 + 1;
 			next.combineCost = (b.cost + a.tax + b.tax);
 			next.useXp = a.useXp || b.useXp;
-			next.weight = (next.useXp ? levelsToXp(combineCost) : next.combineCost) + (a.weight + b.weight);
+			next.weight = (next.useXp ? Enchantment.levelsToXp(next.combineCost) : next.combineCost) + (a.weight + b.weight);
 
 			next.isItem = a.isItem || b.isItem;
 			return next;
@@ -275,6 +275,69 @@
 		return bestTree;
 	}
 	
+	function getBestTree(trees, en) {
+		let best = Infinity;
+		let result = null;
+		let overallBestEn = null;
+
+		for (let i = 0; i < trees.length; i++) {
+			let tree = trees[i];
+			let bestEn = findPermute(tree, en);
+			if (getWeight(tree, bestEn) < best) {
+				result = tree;
+				overallBestEn = bestEn;
+				best = tree.ench.weight;
+			}
+		}
+		
+		while (en.length > 0) {
+			en.pop();
+		}
+		for (let i = 0; i < overallBestEn.length; i++) {
+			en.push(overallBestEn[i]);
+		}
+
+		
+		return result;
+	}
+	
+	function findPermute(tree, en) {
+		let en2 = [];
+		for (let i = 0; i < en.length; i++) {
+			en2.push(en[i]);
+		}
+		let loop = true;
+		let best = getWeight(tree, en2);
+		outerloop: 
+		while (loop) {
+			loop = false;
+			for (let i = 0; i < en2.length; i++) {
+				for (let j = i + 1; j < en2.length; j++) {
+					swap(i, j, en2);
+					if (getWeight(tree, en2) < best) {
+						best = tree.ench.weight;
+						loop = true;
+						continue outerloop;
+					}
+					swap(i, j, en2);
+				}
+			}
+		}
+		return en2;
+	}
+
+	function swap(a, b, en) {
+		let tmp = en[a];
+		en[a] = en[b];
+		en[b] = tmp;
+	}
+
+	function getWeight(tree, en) {
+		fill(tree, en, false);
+		let e = tree.getCompleteEnchantment();
+		return e.weight;
+	}
+	
     function typeSelect() {
     	let dropdown = document.getElementById("type-select");
     	selectedItemType = dropdown.options[dropdown.selectedIndex].text;
@@ -314,6 +377,7 @@
     function changeInput() {
         console.log("update");
         let steps = document.getElementById("steps");
+        let useXp = document.getElementById("use-xp");
         steps.innerHTML = "";
         let ench = [];
         let table = document.getElementById("enchantment-select").children[0].children;
@@ -327,13 +391,18 @@
         		}
         	}
         	if (level != 0) {
-        		ench.push(new Enchantment(name + " " + level, level*multiplier[names.indexOf(name)]));
+        		ench.push(new Enchantment(name + " " + level, level * multiplier[names.indexOf(name)]));
+        		if (useXp.checked) {
+        			ench[ench.length-1].useXp = true;
+        		}
         	}
         }
         console.log(ench);
 // 		getBestTrees(ench).forEach(t=>console.log(t.ench.name));
-		let answer = getShallowTree(getBestTrees(ench));
-		fill(answer, ench, true);
+		let allTrees = getBestTrees(ench);
+		
+		let answer = useXp.checked ? getBestTree(allTrees, ench) : getShallowTree(allTrees);
+		fill(answer, ench, false);
 		let answerSteps = answer.getNodes();
 // 		answer.print("", true);
 		for (let i = 0; i < answerSteps.length; i++) {
@@ -346,7 +415,7 @@
         	steps.appendChild(step)
 		}
 		let result = document.createElement("p")
-		result.innerText = "You now have ("+answer.ench.simpleName+") with a repair cost of "+answer.ench.tax+" at a total cost of "+answer.ench.weight+" levels.";
+		result.innerText = "You now have (" + answer.ench.simpleName + ") with a repair cost of " + answer.ench.tax + " at a total cost of " + answer.ench.weight + (useXp.checked ? " xp." : " levels.");
         steps.appendChild(result)
         
     }
@@ -374,7 +443,9 @@
     <option value="shears">Shears</option>
 
     <option value="other">Other</option>
-</select>
+</select><br>
+<input type="checkbox" id="use-xp" onchange="changeInput()">
+<label for="use-xp">Optimize total experience instead of total levels.</label><br>
 
 <p id="select-label"></p>
 
